@@ -10,6 +10,10 @@ V(t) = D(t) + N(t) + S(t)
 
 We first tried to understand each part in the original data, and then generated new values. We wanted the program to work not only for 10 seconds, but also for 5, 50 and 100 seconds.
 
+![Original neural recording](plots/original_recording.png)
+
+*Figure 1. Original 10-second recording used to estimate the signal components.*
+
 | Part | What we used | Why we chose it |
 |---|---|---|
 | **Drift** | Sine function: `c + A sin(2πft + phase)` | The baseline slowly goes up and down; we thought a sine would be an easy approximation. |
@@ -21,9 +25,25 @@ We first tried to understand each part in the original data, and then generated 
 
 For the **drift**, we first applied a 301-ms median filter and Gaussian smoothing (120 ms), to reduce the influence of spikes. Then we fitted the sine function with `scipy.optimize.curve_fit`. We got an amplitude of about **0.647**, a frequency of **0.0898 Hz** (period about **11.14 s**), offset **0.020** and phase **0.319 rad**.
 
+![Drift fit](plots/drift_fit.png)
+
+*Figure 2. Original signal, smoothed baseline estimate, and fitted sine drift.*
+
 For **spikes**, we used `scipy.signal.find_peaks` on the signal after subtracting the estimated baseline. We selected clear positive peaks (height 2.4, prominence 2.0, at least 7 ms apart). We found **42 spikes**, or **4.2 Hz** on average. To estimate the shape, we aligned the first 9 samples from each peak, averaged them and fitted an exponential. This gave an amplitude of **5.008** above the baseline and **tau = 2.952 ms**.
 
+![Detected spikes](plots/detected_spikes.png)
+
+*Figure 3. Positive spike peaks detected in the original recording.*
+
+![Mean spike shape](plots/spike_shape.png)
+
+*Figure 4. Mean detected spike waveform and its fitted exponential decay.*
+
 For **noise**, we removed the fitted drift and excluded 12 ms before and 26 ms after each spike. The standard deviation of the remaining values was **0.299**. We use this number when generating Gaussian noise.
+
+![Noise distribution](plots/noise_distribution.png)
+
+*Figure 5. Residual voltage distribution after excluding detected spike regions.*
 
 For **activity windows**, we counted spikes in each second. Since there are only 10 windows, we did not want to use the observed count as the exact true rate. We applied a simple *shrinkage* correction towards the overall mean (4.2 Hz). We calculated the factor from the excess variance of window counts: **0.454**.
 
@@ -40,6 +60,10 @@ For **activity windows**, we counted spikes in each second. Since there are only
 | 8–9 | 2 | 3.20 |
 | 9–10 | 3 | 3.66 |
 
+![Activity rates](plots/activity_rates.png)
+
+*Figure 6. Observed spike counts and shrinkage-adjusted rates used for simulation in each one-second window.*
+
 ## 3. Simulation and testing
 
 In every activity window, we draw a new spike count from a Poisson distribution and place these spikes at random moments. We add the exponential spike shape, sine drift and new Gaussian noise. We use **random seed 42**, so the results can be reproduced. For recordings longer than 10 seconds, the rates are shuffled in later blocks, instead of repeating the original signal. We save two arrays, `t` and `raw_data`, as in the original `.npz` file.
@@ -49,6 +73,10 @@ We also wrote a **testing part**. It reads both recordings and detects spikes ag
 ### Full comparison of original and simulated data
 
 We compared the original 10-second recording with the 10-, 50- and 100-second simulations. We also added a **closeness (%)** column for the 10-second simulation. For suitable parameters, we calculated it as `100 × max(0, 1 − abs(simulated − original) / abs(original))`. A value near 100% means that the two numerical estimates are close. We do **not** calculate this percentage for duration, counts, values near zero, or metrics where a relative percentage is not very meaningful. The dash (—) means *not calculated*, not a failed test.
+
+![Original and simulated comparison](plots/comparison_10s.png)
+
+*Figure 7. Original and simulated 10-second recordings, measured spike shape, and residual noise distributions.*
 
 | Metric | Original | 10 s | 10 s closeness (%) | 50 s | 100 s |
 |---|---:|---:|---:|---:|---:|

@@ -1,8 +1,12 @@
-![Pipeline Summary](plots/pipeline_summary.jpeg)
-
 # Project overview
 
-See [Student_Report.md](Student_Report.md) for the full analysis and report.
+This project analyzes a 10-second neural recording and uses its estimated drift, noise, spike shape, and activity rates to generate simulated recordings of different durations. It then compares the simulations with the original data.
+
+**Authors:** Miloserdov Daniil, Anandita Banerjee, Mateo Maya Martinez
+
+<img src="plots/pipeline_summary.jpeg" alt="Pipeline Summary" width="650">
+
+See [Student_Report.md](https://github.com/Anandita06/reverse_engineering_neural_spike_simulation/blob/main/Student_Report.md) for the full analysis and report.
 
 ## Project layout
 
