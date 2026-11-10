@@ -16,6 +16,12 @@ See [Student_Report.md](https://github.com/Anandita06/reverse_engineering_neural
 - `results/`: comparison table
 - `plots/`: generated figures and overview images
 
+Install the required Python packages from the repository root:
+
+```powershell
+python -m pip install -r requirements.txt
+```
+
 Run commands from the repository root:
 
 ```powershell
