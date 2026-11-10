@@ -35,13 +35,13 @@ For **spikes**, we used `scipy.signal.find_peaks` on the signal after subtractin
 
 *Figure 3. Positive spike peaks detected in the original recording.*
 
-![Mean spike shape](plots/spike_shape.png)
+<img src="plots/spike_shape.png" alt="Mean spike shape" width="480">
 
 *Figure 4. Mean detected spike waveform and its fitted exponential decay.*
 
 For **noise**, we removed the fitted drift and excluded 12 ms before and 26 ms after each spike. The standard deviation of the remaining values was **0.299**. We use this number when generating Gaussian noise.
 
-![Noise distribution](plots/noise_distribution.png)
+<img src="plots/noise_distribution.png" alt="Noise distribution" width="480">
 
 *Figure 5. Residual voltage distribution after excluding detected spike regions.*
 
