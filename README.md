@@ -11,7 +11,8 @@ See [Student_Report.md](https://github.com/Anandita06/reverse_engineering_neural
 ## Project layout
 
 - `src/`: shared analysis functions and standalone validation script
-- `scripts/`: preprocessing, simulation, and comparison pipeline
+- `scripts/`: preprocessing, simulation/comparison, and Team 3 reconstruction generation
+- `evaluate_team.py`: inter-team reconstruction evaluator
 - `data/`: original recording and generated simulation files
 - `results/`: comparison table
 - `plots/`: generated figures and overview images
