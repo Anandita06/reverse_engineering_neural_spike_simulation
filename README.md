@@ -94,16 +94,8 @@ Evaluate it from the repository root:
 python .\evaluate_team.py .\data\spike_data.npz .\team_3_reconstruction.npz | Tee-Object .\results\team_3_evaluation.json
 ```
 
-This displays the evaluation and saves its JSON output. For the in-class
-evaluation, replace the candidate and output filenames with each team's
-submission name. For example, to evaluate Team 1:
-
-```powershell
-python .\evaluate_team.py .\data\spike_data.npz .\team_1_reconstruction.npz | Tee-Object .\results\team_1_evaluation.json
-```
-
-Repeat for each team's file, then record its `final_score` in the competition
-score table. The evaluator can also be called from Python:
+This displays the evaluation and saves its JSON output. The evaluator can
+also be called from Python:
 
 ```python
 from evaluate_team import evaluate
