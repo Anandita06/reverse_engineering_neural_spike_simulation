@@ -8,7 +8,7 @@ We had a 10-second recording (10,000 samples, 1000 Hz) with spikes, noise and a 
 V(t) = D(t) + N(t) + S(t)
 \]
 
-We first tried to understand each part in the original data, and then generated new values. We wanted the program to work not only for 10 seconds, but also for 5, 50 and 100 seconds.
+We first estimated these three components and used the fitted model to generate new recordings of 5, 10, 50 and 100 seconds. Later, for the inter-team competition, we also used the same approach to reconstruct the **original 10-second recording** and wrote a separate evaluator to compare teams. These are two different tasks: simulation makes new random recordings, while reconstruction tries to explain the recording we were given.
 
 ![Original neural recording](plots/original_recording.png)
 
@@ -20,6 +20,10 @@ We first tried to understand each part in the original data, and then generated 
 | **Noise** | Gaussian white noise | After removing the spikes and drift, the background looked approximately normally distributed and not strongly correlated. |
 | **Spike shape** | Exponential decay: `A_spike × exp(-t/tau)` | The visible spikes have a fast peak and a decreasing tail. We discussed this function as a simple first model. |
 | **Spike times** | Poisson counts in 1-second activity windows, plus 5-ms refractory time | From our lesson: activity is not the same everywhere. A Poisson model makes new random spikes, while the refractory time prevents events that are too close. |
+
+![Updated analysis and evaluation pipeline](plots/pipeline_summary.jpeg)
+
+*Updated pipeline. The fitted signal model is used in two ways: to generate new recordings with random spike times and to reconstruct the observed recording using detected spike positions. The two outputs are checked using different evaluation methods.*
 
 ## 2. How we estimated the parameters
 
@@ -125,8 +129,52 @@ For each criterion, we calculated the difference between the original and simula
 
 We chose practical tolerances for different measurements, and then added all the points. The score is **our own heuristic**, not an official grade or a statistical proof. Some metrics used inside the score (for example, Fano factor and KS distance) are not shown separately in the full comparison table to keep it shorter. For the 10-second simulation, the average spike shape and noise distribution looked especially close to the original.
 
-## 4. Limitations and sources of our ideas
+## 4. Reconstruction for the inter-team competition (new)
 
-We cannot recover the same random noise and spike moments. Also, we only have 10 seconds, so the periodic drift and the activity of a 100-second recording are **assumptions**. Our spike shape is simplified: we model the decay but not the full action potential. We would like to improve the ISI distribution later.
+For the competition, we needed to save our **estimate of the components of the original 10-second recording**, rather than another randomly generated signal. We added `scripts/03_create_reconstruction.py` for this. It independently runs the same estimation steps described above: smoothing and fitting the drift, finding positive spikes, fitting their average exponential shape, and estimating the noise level.
+
+For reconstruction, we **do not use the Poisson process to choose new spike times**. Instead, we put the fitted spike waveform at the 42 peak positions detected in the original recording. We add these spike waveforms to the fitted sine drift to obtain a clean structured estimate:
+
+`reconstruction = drift + spike_signal`
+
+We estimate the noise strength from the remaining signal outside spike windows and save a **separate newly generated Gaussian noise array** using seed 42. This array represents the assumed noise model; it is **not the exact noise originally present** in the recording. It is not added to the submitted `reconstruction` array, following the written instruction in the competition handout.
+
+The script creates `team_3_reconstruction.npz` with the six requested arrays:
+
+| Array | What it contains |
+|---|---|
+| `t` | Original time vector (10,000 samples) |
+| `drift` | Fitted sine drift (10,000 samples) |
+| `spike_signal` | Fitted spike waveforms placed at detected positions (10,000 samples) |
+| `noise` | Separate Gaussian noise realization, seed 42 (10,000 samples) |
+| `reconstruction` | Drift + spike signal, without the newly generated noise (10,000 samples) |
+| `spike_indices` | The 42 detected spike **peak** indices |
+
+We use peak indices as the start of our simplified spike template. The actual onset of a biological spike may occur earlier, so these indices are an approximation of the requested spike starting indices.
+
+## 5. Evaluating the reconstructions (new)
+
+We also added `evaluate_team.py`, which implements the required `evaluate(reference_file, candidate_file)` function. It checks the submitted file format first: required arrays, sizes, time vector, valid spike indices, and whether `reconstruction` equals `drift + spike_signal`. Invalid files receive a score of zero.
+
+For valid files, we compare five aspects of the candidate reconstruction with estimates obtained from the original recording:
+
+| Criterion | Points | How we evaluate it |
+|---|---:|---|
+| Drift | 20 | RMSE against a smoothed baseline estimate |
+| Structured reconstruction | 30 | RMSE against the original recording, allowing for the estimated noise level |
+| Spike timing | 25 | F1 score for matching detected spikes within ±5 ms |
+| Spike shape | 15 | RMSE of the average 9-sample spike waveform |
+| Noise | 10 | Noise standard deviation, mean, and lag-1 autocorrelation |
+| **Total** | **100** | |
+
+For the error-based metrics, we convert differences into points using a decreasing exponential function. The five scores are added to give the final result. The function returns a dictionary containing validity checks, metrics and `final_score`, so it can be run on our own file or another team's file.
+
+As a basic test, we evaluated `team_3_reconstruction.npz` against `spike_data.npz` and obtained **99.908 / 100**. All 42 detected peaks matched within 5 ms. This is a **self-evaluation result**, not an official competition grade. Our reconstructor and evaluator use similar baseline and spike-detection procedures, which can favour our own submission. Also, the hidden true drift, spikes and noise are unknown. The evaluator therefore measures consistency with estimates from the raw recording, not absolute recovery of the true components.
+
+The earlier **97.436 / 100** score for the 10-second synthetic recording and this **99.908 / 100** score measure different things and should not be compared as if they were the same test. The first checks the *statistics of a new random recording*; the second checks the *alignment and quality of the reconstructed original recording*.
+
+## 6. Limitations and sources of our ideas
+
+For the **synthetic recordings**, we cannot reproduce the original random noise or the same spike moments, and we do not try to. For the **reconstruction**, we use detected spike positions, but the original hidden components are still unknown. We only have 10 seconds, so the periodic drift and the activity of a 100-second recording are **assumptions**. Our spike shape is simplified: we model the decay but not the full action potential. We would like to improve the ISI distribution later, and a more independent reference-spike detection method would make the inter-team evaluator fairer.
 
 The main ideas came from **our class discussion** (Poisson process and activity windows), **Assignments 2A/2B** (spike detection and refractory period) and **basic mathematics** (sine and exponential functions). We used **ChatGPT and GitHub Copilot** for brainstorming, suggestions for Python code, debugging and ideas for the testing part. We checked the fitted numbers and outputs against the original recording. These tools helped us write and improve the code, but we made the modelling choices and discuss their limitations here. For Python functions we used the [SciPy documentation for `find_peaks`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.find_peaks.html) and [`curve_fit`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.curve_fit.html).

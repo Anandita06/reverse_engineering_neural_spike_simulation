@@ -4,7 +4,7 @@ This project analyzes a 10-second neural recording and uses its estimated drift,
 
 **Authors:** Miloserdov Daniil, Anandita Banerjee, Mateo Maya Martinez
 
-<img src="plots/pipeline_summary.jpeg" alt="Pipeline Summary" width="650">
+<img src="plots/pipeline_summary.jpeg" alt="Updated analysis and evaluation pipeline" width="650">
 
 See [Student_Report.md](https://github.com/Anandita06/reverse_engineering_neural_spike_simulation/blob/main/Student_Report.md) for the full analysis and report.
 
