@@ -55,6 +55,33 @@ the structured signal (`drift + spike_signal`); generated Gaussian noise is
 stored separately in `noise`. The estimated noise standard deviation is
 0.2986, measured outside a 12 ms pre-spike and 26 ms post-spike window.
 
+### Inferred model and parameters
+
+We model the recording as `V(t) = D(t) + S(t) + N(t)`: a sinusoidal drift,
+exponential spike waveforms, and Gaussian white noise.
+
+- **Drift:** `D(t) = c + A sin(2 pi f t + phi)`, with offset `c = 0.020`,
+  amplitude `A = 0.647`, frequency `f = 0.0898 Hz` (period about 11.14 s),
+  and phase `phi = 0.319 rad`.
+- **Spike waveform:** `S(t) = A_spike exp(-t / tau)`, with amplitude
+  `A_spike = 5.008` and decay constant `tau = 2.952 ms`.
+- **Noise:** Gaussian white noise with standard deviation `sigma = 0.2986`.
+
+We assume the drift is slow and sinusoidal over the 10-second recording, and
+the background noise is stationary, normally distributed, and uncorrelated.
+For simulated spike timing, we impose a 5 ms refractory period. This is
+distinct from the 7 ms minimum spacing used during peak detection.
+
+### Detection and reconstruction method
+
+We estimate the drift by applying a 301 ms median filter and Gaussian
+smoothing (`sigma = 120 ms`), then fitting a sine with
+`scipy.optimize.curve_fit`. We detect positive peaks with
+`scipy.signal.find_peaks` (height 2.4, prominence 2.0, minimum spacing 7 ms),
+fit an exponential to the detected spike waveforms, and place the fitted
+template at each detected index. We estimate noise from residual regions
+outside the 12 ms pre-spike and 26 ms post-spike windows.
+
 Generate the submission file from the repository root:
 
 ```powershell
@@ -64,10 +91,19 @@ python .\scripts\03_create_reconstruction.py
 Evaluate it from the repository root:
 
 ```powershell
-python .\evaluate_team.py .\data\spike_data.npz .\team_3_reconstruction.npz
+python .\evaluate_team.py .\data\spike_data.npz .\team_3_reconstruction.npz | Tee-Object .\results\team_3_evaluation.json
 ```
 
-The evaluator can also be called from Python:
+This displays the evaluation and saves its JSON output. For the in-class
+evaluation, replace the candidate and output filenames with each team's
+submission name. For example, to evaluate Team 1:
+
+```powershell
+python .\evaluate_team.py .\data\spike_data.npz .\team_1_reconstruction.npz | Tee-Object .\results\team_1_evaluation.json
+```
+
+Repeat for each team's file, then record its `final_score` in the competition
+score table. The evaluator can also be called from Python:
 
 ```python
 from evaluate_team import evaluate
